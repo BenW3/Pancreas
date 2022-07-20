@@ -3,11 +3,10 @@
 
 from math import cos, sin, pi, acos, atan
 from time import sleep
-from numpy import sort
 import serial
 import pynmea2
 from time import perf_counter
-from numpy import genfromtxt, sign
+from numpy import genfromtxt, sign, sort
 import csv
 
 # steeringArduino = serial.Serial(port = 'COM13', baudrate=9600, timeout=5)
@@ -28,7 +27,7 @@ def initArduinos():
     global sensorArduino
     try:
         steeringArduino = serial.Serial(port = 'COM13', baudrate=115200, timeout= 0.1)
-        sensorArduino = serial.Serial(port = 'COM6', baudrate = 115200, timeout = 0.1)
+        sensorArduino = serial.Serial(port = '/dev/ttyACM0', baudrate = 115200, timeout = 0.1)
         return 'Arduinos connected'
     except Exception as e:
         return e
@@ -41,20 +40,24 @@ def readGPS():
     """
     It reads the GPS Serial port and translates NMEA to usable values. The usb port for the gps needs to be the leftmost one on this particular panda.
     """
-    data = ""
-    gps = serial.Serial(port='COM8', baudrate=115200, timeout=5)
-    gps.flushInput()  # flush input buffer, discarding all its contents
-    gps.flushOutput()
-    sleep(.05)
-    data = gps.readline()
-    sleep(.05)
-    gps.close()
-    data = data.decode("utf-8")
-    dataParse = pynmea2.parse(data)
-    gpsLat = dataParse.latitude
-    gpsLon = dataParse.longitude
-    sats = dataParse.num_sats
-    return gpsLat, gpsLon, int(sats)
+    try:
+        data = ""
+        gps = serial.Serial(port='/dev/ttyUSB1', baudrate=115200, timeout=5)
+        gps.flushInput()  # flush input buffer, discarding all its contents
+        gps.flushOutput()
+        sleep(.05)
+        data = gps.readline()
+        sleep(.05)
+        gps.close()
+        data = data.decode("utf-8")
+        dataParse = pynmea2.parse(data)
+        gpsLat = dataParse.latitude
+        gpsLon = dataParse.longitude
+        sats = dataParse.num_sats
+        return gpsLat, gpsLon, int(sats)
+    except Exception as e:
+        return e
+    
 
 
 def deg2rad(deg):
