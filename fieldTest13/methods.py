@@ -26,7 +26,7 @@ def initArduinos():
     global steeringArduino
     global sensorArduino
     try:
-        steeringArduino = serial.Serial(port = 'COM13', baudrate=115200, timeout= 0.1)
+        steeringArduino = serial.Serial(port = '/dev/ttyACM1', baudrate=115200, timeout= 0.1)
         sensorArduino = serial.Serial(port = '/dev/ttyACM0', baudrate = 115200, timeout = 0.1)
         return 'Arduinos connected'
     except Exception as e:
