@@ -8,6 +8,7 @@ import pynmea2
 from time import perf_counter
 from numpy import genfromtxt, sign, sort
 import csv
+import serial.tools.list_ports
 
 # steeringArduino = serial.Serial(port = 'COM13', baudrate=9600, timeout=5)
 robotLength = 4 #m
@@ -19,6 +20,31 @@ setpoint = 0  # for synchronous steering
 Speed = 1700
 speedset = -1
 
+def getSerialPorts():
+    """
+    This function finds the pancreas' connected devices and stores their serial port names.
+    """
+    global steeringPort
+    global sensorPort
+    global gpsPort
+    global radioPort
+    try:
+        radioPort = list(*serial.tools.list_ports.grep('FT232EX'))[0]
+    except:
+        print("Radio not connected.")
+    try:
+        gpsPort = list(*serial.tools.list_ports.grep('Controller'))[0]
+    except:
+        print("GPS not connected.")
+    try:
+        sensorPort = list(*serial.tools.list_ports.grep('Leonardo'))[0]
+    except:
+        print("Sensor arduino not connected.")
+    try:
+        steeringPort = list(*serial.tools.list_ports.grep('USB Serial'))[0]
+    except:
+        print("Steering arduino not connected.")
+
 def initArduinos():
     """
     This function initializes the two arduinos used in the rest of the program. 
@@ -26,8 +52,8 @@ def initArduinos():
     global steeringArduino
     global sensorArduino
     try:
-        steeringArduino = serial.Serial(port = '/dev/ttyACM1', baudrate=115200, timeout= 0.1)
-        sensorArduino = serial.Serial(port = '/dev/ttyACM0', baudrate = 115200, timeout = 0.1)
+        steeringArduino = serial.Serial(port = steeringPort, baudrate = 115200, timeout= 0.1)
+        sensorArduino = serial.Serial(port = sensorPort, baudrate = 115200, timeout = 0.1)
         return 'Arduinos connected'
     except Exception as e:
         return e
@@ -42,7 +68,7 @@ def readGPS():
     """
     try:
         data = ""
-        gps = serial.Serial(port='/dev/ttyUSB1', baudrate=115200, timeout=5)
+        gps = serial.Serial(port = gpsPort, baudrate=115200, timeout=5)
         gps.flushInput()  # flush input buffer, discarding all its contents
         gps.flushOutput()
         sleep(.05)

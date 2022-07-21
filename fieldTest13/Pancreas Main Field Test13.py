@@ -22,7 +22,8 @@ import os
 #--------------------
 
 logFrequency = 1 # How frequent should data be logged? s, min?
-receiver = XBeeDevice("/dev/ttyUSB2", 9600)
+methods.getSerialPorts()
+receiver = XBeeDevice(methods.radioPort, 9600)
 remoteTransmitter = RemoteXBeeDevice(receiver, XBee64BitAddress.from_hex_string("0013A2004104110E"))
 receiver.open()
 print(str(methods.initArduinos()))
