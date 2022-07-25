@@ -66,7 +66,7 @@ def initArduinos():
     if sensorPort != "":
         try:
             sensorArduino = serial.Serial(port = sensorPort, baudrate = 115200, timeout = 0.1)
-            val += 'sensors connected'
+            val += ', sensors connected'
         except Exception as e:
             val += e
     return val
