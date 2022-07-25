@@ -28,6 +28,10 @@ def getSerialPorts():
     global sensorPort
     global gpsPort
     global radioPort
+    radioPort = ""
+    sensorPort = ""
+    gpsPort = ""
+    steeringPort = ""
     try:
         radioPort = list(*serial.tools.list_ports.grep('FT232EX'))[0]
     except:
@@ -51,12 +55,21 @@ def initArduinos():
     """
     global steeringArduino
     global sensorArduino
-    try:
-        steeringArduino = serial.Serial(port = steeringPort, baudrate = 115200, timeout= 0.1)
-        sensorArduino = serial.Serial(port = sensorPort, baudrate = 115200, timeout = 0.1)
-        return 'Arduinos connected'
-    except Exception as e:
-        return e
+    val = ""
+
+    if steeringPort != "":
+        try:
+            steeringArduino = serial.Serial(port = steeringPort, baudrate = 115200, timeout= 0.1)
+            val +='steering connected'
+        except Exception as e:
+            val += e
+    if sensorPort != "":
+        try:
+            sensorArduino = serial.Serial(port = sensorPort, baudrate = 115200, timeout = 0.1)
+            val += 'sensors connected'
+        except Exception as e:
+            val += e
+    return val
 
 def setSpeed(input):
     global Speed

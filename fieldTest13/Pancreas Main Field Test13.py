@@ -1,3 +1,5 @@
+#!/usr/bin/python3
+
 import methods
 from digi.xbee.devices import XBeeDevice, RemoteXBeeDevice, XBee64BitAddress
 from pathlib import Path
@@ -111,7 +113,7 @@ if __name__ == "__main__":
             try:
                 receiver.send_data_async(remoteTransmitter, methods.write_read('P', methods.sensorArduino))
             except Exception as e:
-                print("Failed to send power data")
+                print("Failed to send power data, " + str(e))
                 receiver.send_data_async(remoteTransmitter, str(e))
 
         elif message == "compass reading":
