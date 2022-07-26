@@ -123,7 +123,13 @@ if __name__ == "__main__":
             try:
                 data = transmitter.read_data_from(remoteReceiver, 5)
                 message = data.data.decode("utf8")
-                print("\n"+message)
+                counter = int(message)
+                i = 0
+                while i < counter:
+                    data = transmitter.read_data_from(remoteReceiver, 5)
+                    message = data.data.decode("utf8")
+                    print(message)
+                    i+=1
                 name = input()
                 transmitter.send_data_async(remoteReceiver, name)
             except:

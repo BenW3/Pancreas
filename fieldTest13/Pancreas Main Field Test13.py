@@ -1,9 +1,10 @@
 #!/usr/bin/python3
 
+from time import sleep
 import methods
 from digi.xbee.devices import XBeeDevice, RemoteXBeeDevice, XBee64BitAddress
-from pathlib import Path
 import os
+import glob
 #--------------------
 # Pancreas Main Code
 #--------------------
@@ -132,10 +133,10 @@ if __name__ == "__main__":
             counter = 1
             filestr = "Please type in the name of one of the available coordinate files which you would like to follow or type CANCEL: \n"
             filelist.append(filestr)
-            for p in Path( '.' ).glob( '*.csv' ):
-                size = os.path.getsize(p)
-                filestr = (str(p) + " [" +str(size)+" bytes"+ "] ")
-                filelist.append(filestr)
+            files = glob.glob('./*.csv')
+            for f in files:
+                filestr = str(f)+" ["+str(os.path.getsize(f))+" bytes"+"]"
+                filelist.append(filestr) 
                 counter +=1
             print(filelist)
             i = 0
@@ -144,9 +145,9 @@ if __name__ == "__main__":
             receiver.flush_queues()
             while i < counter:
                 receiver.send_data_async(
-                    remoteTransmitter, filelist[i]) 
-                receiver.flush_queues()
+                    remoteTransmitter, str(filelist[i])) 
                 i += 1
+                print(i)
             try:
                 data = receiver.read_data_from(remoteTransmitter, 60)
                 userFilename = data.data.decode("utf8") 
