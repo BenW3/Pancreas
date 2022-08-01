@@ -1,10 +1,11 @@
 #!/usr/bin/python3
 
-from time import sleep
+# from time import sleep
 import methods
 from digi.xbee.devices import XBeeDevice, RemoteXBeeDevice, XBee64BitAddress
 import os
 import glob
+from math import cos, sin
 #--------------------
 # Pancreas Main Code
 #--------------------
@@ -24,7 +25,7 @@ import glob
     #................
 #--------------------
 
-logFrequency = 1 # How frequent should data be logged? s, min?
+reflat = 0.0
 methods.getSerialPorts()
 receiver = XBeeDevice(methods.radioPort, 9600)
 remoteTransmitter = RemoteXBeeDevice(receiver, XBee64BitAddress.from_hex_string("0013A2004104110E"))
@@ -59,6 +60,8 @@ if __name__ == "__main__":
                     lat = []
                     lon = []
                     logPath = True
+                    reflat = methods.readGPS()[0]
+                    aspectRatio = cos(reflat)
                 if message == "4":
                     try:
                         receiver.send_data_async(remoteTransmitter, "Please supply a file name with a .csv extension within the next 30s")
@@ -77,9 +80,14 @@ if __name__ == "__main__":
                 if logPath == True:
                     try:
                         [gps_lat,gps_lon,sats] = methods.readGPS()
+                        robotAngle = methods.deg2rad(methods.write_read('C', methods.sensorArduino))
                         if sats > 0:
-                            lat.append(gps_lat)
-                            lon.append(gps_lon)
+                            [xraw, yraw] = methods.latlonToXY(gps_lat, gps_lon, aspectRatio)
+                            xcenter = xraw+(methods.robotWidth/2)*cos(robotAngle)
+                            ycenter = yraw-(methods.robotWidth/2)*sin(robotAngle)
+                            [latAdjusted, lonAdjusted] = methods.XYtolatlon(xcenter,ycenter,aspectRatio)
+                            lat.append(latAdjusted)
+                            lon.append(lonAdjusted)
                     except:
                         print("No connection to GPS")
                         pass

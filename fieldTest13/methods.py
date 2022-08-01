@@ -11,6 +11,7 @@ import csv
 import serial.tools.list_ports
 
 # steeringArduino = serial.Serial(port = 'COM13', baudrate=9600, timeout=5)
+logFrequency = 10 # How frequent should data be logged? s, min?
 robotLength = 4 #m
 robotWidth = 10 #m
 angleSignal = 0  # Radians
@@ -479,6 +480,8 @@ def waypointFollower(ki,kp,kd,lookahead, receiver, remoteTransmitter, filename):
     outputlist = []
     errplot = []
     timeplot = []
+    pwrplot = []
+    logTimer = perf_counter()
     waypointFollwerVariableInits(ki,kp,kd,lookahead)
     initializeWaypointFollower(filename)
     while True:
@@ -488,8 +491,8 @@ def waypointFollower(ki,kp,kd,lookahead, receiver, remoteTransmitter, filename):
             [gps_lat,gps_lon,sats] = readGPS()
             if sats != 0:
                 [xraw, yraw] = latlonToXY(gps_lat, gps_lon, aspectRatio)
-                xcenter = xraw+(robotWidth/2)*sin(robotAngle)
-                ycenter = yraw+(robotWidth/2)*cos(robotAngle)
+                xcenter = xraw+(robotWidth/2)*cos(robotAngle)
+                ycenter = yraw-(robotWidth/2)*sin(robotAngle)
                 [latAdjusted, lonAdjusted] = XYtolatlon(xcenter,ycenter,aspectRatio)
                 latPath.append(latAdjusted)
                 lonPath.append(lonAdjusted)
@@ -526,9 +529,12 @@ def waypointFollower(ki,kp,kd,lookahead, receiver, remoteTransmitter, filename):
         receiver.send_data_async(remoteTransmitter, infostr)
         errplot.append(err)
         timeplot.append(perf_counter())
+        if timeplot[-1] - logTimer > logFrequency:
+            pwrplot.append(write_read('P',sensorArduino))
+            logTimer = timeplot[-1]
     # Run error through PID control for steering
         output = computePID(-err, Speed)
-        output = movingAverageFilter(output,outputlist,1)
+        # output = movingAverageFilter(output,outputlist,1)
         outputlist.append(output)
 
     # Output to steering motors
@@ -541,3 +547,4 @@ def waypointFollower(ki,kp,kd,lookahead, receiver, remoteTransmitter, filename):
     logPath(latPath,lonPath,"traversedPath.csv")
     logPath(timeplot,errplot,"erroroutput.csv")
     logPath(timeplot,outputlist,"PIDoutput.csv")
+    logPath(timeplot, pwrplot, "PowerConsumption.csv")
