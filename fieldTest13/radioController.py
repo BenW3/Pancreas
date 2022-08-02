@@ -13,10 +13,17 @@ def on_press(key):
         if key.char == '0':
             print("manual stopped")
             return False
-        if key.char == '4': # fix this
+        elif key.char == '4': # fix this
             print("manual paused, press enter")
             inputName = True
             return False
+        elif key.char == '5':
+            try:
+                data = transmitter.read_data_from(remoteReceiver, 3)
+                message = data.data.decode("utf8")
+                print(message)
+            except:
+                print("No transmission")
     except AttributeError:
         print('special key {0} pressed'.format(
             key))
@@ -100,7 +107,7 @@ if __name__ == "__main__":
            
             
         elif x == "manual":
-            print("----------------------------------\nManual mode activated, avialable commands are: \n   w,a,s,d - where a and d are for turning, and w and s are forward and backward, respectively\n    l-lock forward or reverse\n   1 - for dual Ackerman steering\n   2 - for synchronous steering\n   3 - to record a gps coordinate path\n   4 - stop recording path and write to file\n   0 - stop manual mode\n----------------------------------\n")
+            print("----------------------------------\nManual mode activated, avialable commands are: \n   w,a,s,d - where a and d are for turning, and w and s are forward and backward, respectively\n    l-lock forward or reverse\n   1 - for dual Ackerman steering\n   2 - for synchronous steering\n   3 - to record a gps coordinate path\n   4 - stop recording path and write to file\n   5 - read transmission\n    0 - stop manual mode\n----------------------------------\n")
             transmitter.send_data_async(remoteReceiver, x)
             beginManual()
 

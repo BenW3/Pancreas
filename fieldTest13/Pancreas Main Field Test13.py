@@ -59,9 +59,19 @@ if __name__ == "__main__":
                 if message == "3":
                     lat = []
                     lon = []
-                    logPath = True
-                    reflat = methods.readGPS()[0]
-                    aspectRatio = cos(reflat)
+                    logPath = False
+                    i = 0
+                    while i < 5 and logPath == False: 
+                        try:
+                            i += 1
+                            [reflat,satnum] = methods.readGPS()[::2]
+                            aspectRatio = cos(reflat)
+                            receiver.send_data_async(remoteTransmitter, "try "+str(i))
+                            if satnum !=0:
+                               logPath = True
+                               receiver.send_data_async(remoteTransmitter, "Success!")
+                        except Exception as e:
+                            receiver.send_data_async(remoteTransmitter, str(e))
                 if message == "4":
                     try:
                         receiver.send_data_async(remoteTransmitter, "Please supply a file name with a .csv extension within the next 30s")
