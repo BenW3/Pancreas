@@ -6,6 +6,7 @@ from digi.xbee.devices import XBeeDevice, RemoteXBeeDevice, XBee64BitAddress
 import os
 import glob
 from math import cos, sin
+import sys
 #--------------------
 # Pancreas Main Code
 #--------------------
@@ -93,13 +94,16 @@ if __name__ == "__main__":
                         robotAngle = methods.deg2rad(methods.write_read('C', methods.sensorArduino))
                         if sats != 0:
                             [xraw, yraw] = methods.latlonToXY(gps_lat, gps_lon, aspectRatio)
-                            xcenter = xraw+(methods.robotWidth/2)*cos(robotAngle)
-                            ycenter = yraw-(methods.robotWidth/2)*sin(robotAngle)
+                            xcenter = xraw+(methods.robotWidth/2.0)*cos(robotAngle)
+                            ycenter = yraw-(methods.robotWidth/2.0)*sin(robotAngle)
                             [latAdjusted, lonAdjusted] = methods.XYtolatlon(xcenter,ycenter,aspectRatio)
                             lat.append(latAdjusted)
                             lon.append(lonAdjusted)
-                    except:
-                        print("No connection to GPS")
+                    except Exception as e:
+                        exception_type, exception_object, exception_traceback = sys.exc_info()
+                        filename = exception_traceback.tb_frame.f_code.co_filename
+                        line_number = exception_traceback.tb_lineno
+                        receiver.send_data_async(remoteTransmitter, str(e) +", "+ str(exception_type)+", "+str(filename)+", "+str(line_number))
                         pass
                 # print(methods.manualControl(message))
                 # var = str(methods.write_read('S'+ methods.manualControl(message), methods.steeringArduino))

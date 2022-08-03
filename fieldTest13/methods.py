@@ -12,8 +12,8 @@ import serial.tools.list_ports
 
 # steeringArduino = serial.Serial(port = 'COM13', baudrate=9600, timeout=5)
 logFrequency = 10 # How frequent should data be logged? s, min?
-robotLength = 4 #m
-robotWidth = 10 #m
+robotLength = 4.0 #m
+robotWidth = 10.0 #m
 angleSignal = 0  # Radians
 velocitySignal = 0  # Microseconds
 mode = 1  # Steering mode
@@ -104,14 +104,14 @@ def deg2rad(deg):
     '''
     converts degrees to radians, pretty simple
     '''
-    return deg*(pi/180)
+    return deg*(pi/180.0)
 
 
 def rad2deg(rad):
     '''
     converts radians to degrees, pretty simple
     '''
-    return rad*180/pi
+    return rad*180.0/pi
 
 
 def distanceToWaypoint(xp, yp, xw, yw):
