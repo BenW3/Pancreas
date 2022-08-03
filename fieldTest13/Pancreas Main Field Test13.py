@@ -75,6 +75,7 @@ if __name__ == "__main__":
                             receiver.send_data_async(remoteTransmitter, str(e))
                 if message == "4":
                     try:
+                        receiver.flush_queues()
                         receiver.send_data_async(remoteTransmitter, "Please supply a file name with a .csv extension within the next 30s")
                         receiver.flush_queues()
                         data = receiver.read_data_from(remoteTransmitter, 30)
@@ -90,8 +91,8 @@ if __name__ == "__main__":
 
                 if logPath == True:
                     try:
-                        [gps_lat,gps_lon,sats] = methods.readGPS()
-                        robotAngle = methods.deg2rad(methods.write_read('C', methods.sensorArduino))
+                        [gps_lat, gps_lon, sats] = methods.readGPS()
+                        robotAngle = methods.deg2rad(float(methods.write_read('C', methods.sensorArduino)))
                         if sats != 0:
                             [xraw, yraw] = methods.latlonToXY(gps_lat, gps_lon, aspectRatio)
                             xcenter = xraw+(methods.robotWidth/2.0)*cos(robotAngle)
