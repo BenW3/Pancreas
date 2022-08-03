@@ -107,7 +107,7 @@ if __name__ == "__main__":
            
             
         elif x == "manual":
-            print("----------------------------------\nManual mode activated, avialable commands are: \n   w,a,s,d - where a and d are for turning, and w and s are forward and backward, respectively\n    l-lock forward or reverse\n   1 - for dual Ackerman steering\n   2 - for synchronous steering\n   3 - to record a gps coordinate path\n   4 - stop recording path and write to file\n   5 - read transmission\n    0 - stop manual mode\n----------------------------------\n")
+            print("----------------------------------\nManual mode activated, avialable commands are: \n   w,a,s,d - where a and d are for turning, and w and s are forward and backward, respectively\n   l-lock forward or reverse\n   1 - for dual Ackerman steering\n   2 - for synchronous steering\n   3 - to record a gps coordinate path\n   4 - stop recording path and write to file\n   5 - read transmission\n   0 - stop manual mode\n----------------------------------\n")
             transmitter.send_data_async(remoteReceiver, x)
             beginManual()
 

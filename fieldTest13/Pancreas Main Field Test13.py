@@ -25,7 +25,7 @@ from math import cos, sin
     #................
 #--------------------
 
-reflat = 0.0
+aspectRatio = 0.0
 methods.getSerialPorts()
 receiver = XBeeDevice(methods.radioPort, 9600)
 remoteTransmitter = RemoteXBeeDevice(receiver, XBee64BitAddress.from_hex_string("0013A2004104110E"))
@@ -66,7 +66,7 @@ if __name__ == "__main__":
                             i += 1
                             [reflat,satnum] = methods.readGPS()[::2]
                             aspectRatio = cos(reflat)
-                            receiver.send_data_async(remoteTransmitter, "try "+str(i))
+                            receiver.send_data_async(remoteTransmitter, "try "+str(i)+", "+str(reflat))
                             if satnum !=0:
                                logPath = True
                                receiver.send_data_async(remoteTransmitter, "Success!")
@@ -91,7 +91,7 @@ if __name__ == "__main__":
                     try:
                         [gps_lat,gps_lon,sats] = methods.readGPS()
                         robotAngle = methods.deg2rad(methods.write_read('C', methods.sensorArduino))
-                        if sats > 0:
+                        if sats != 0:
                             [xraw, yraw] = methods.latlonToXY(gps_lat, gps_lon, aspectRatio)
                             xcenter = xraw+(methods.robotWidth/2)*cos(robotAngle)
                             ycenter = yraw-(methods.robotWidth/2)*sin(robotAngle)
