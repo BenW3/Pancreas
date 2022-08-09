@@ -66,7 +66,7 @@ int signalStore;
 void setup() {
   Serial.begin(115200); // serial initialization
   delay(10);
-  Serial.println("1");
+  Serial.println("Setting up drive motors . . .");
   Serial.setTimeout(10);
   pinMode(LWHEELMOTOR, OUTPUT);
   pinMode(RWHEELMOTOR, OUTPUT);
@@ -83,14 +83,19 @@ void setup() {
   LRWheel.writeMicroseconds(1500);
   RRWheel.attach(RRWHEELMOTOR);
   RRWheel.writeMicroseconds(1500);
+  Serial.println(F("Connecting steering motors . . ."));
   lMotor.init();
-//  lMotor.calculateStepsReversible(0);
+  Serial.println(F("lmotor running"));
+  delay(10);
   rMotor.init();
-//  rMotor.calculateStepsReversible(0);
+  Serial.println(F("rmotor running"));
+  delay(10);
   lrMotor.init();
-//  lrMotor.calculateStepsReversible(0);
+  Serial.println(F("lrmotor running"));
+  delay(10);
   rrMotor.init();
-//  rrMotor.calculateStepsReversible(0);
+  Serial.println(F("rrmotor running"));
+  delay(10);
 
 }
 
@@ -163,6 +168,7 @@ void loop() {
     }
   }
   lMotor.turnToAngle();
+//  Serial.println(lMotor.returnAngle());
   rMotor.turnToAngle();
   lrMotor.turnToAngle();
   rrMotor.turnToAngle();

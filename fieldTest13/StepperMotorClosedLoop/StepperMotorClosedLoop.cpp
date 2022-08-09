@@ -33,7 +33,6 @@ void StepperMotorClosedLoop::init() {
     _mux.begin();
     _mux.setPort(_port);
     _checkMagnetPresence(); //check the magnet (blocks until magnet is found)
-
     _readRawAngle(); //make a reading so the degAngle gets updated
     _startAngle = _degAngle; //update startAngle with degAngle - for taring
     _time = millis();
