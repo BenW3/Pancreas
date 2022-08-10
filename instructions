@@ -1,0 +1,9 @@
+Put the following at the end of the .bashrc file.
+
+echo Running at boot
+
+cd /media/pancreas/Pancreas\ SD
+
+/bin/python3 /media/pancreas/Pancreas\ SD/fieldTest13/Pancreas\ Main\ Field\ Test13.py &
+
+Then, set the terminal to open on startup.

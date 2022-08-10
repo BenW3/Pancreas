@@ -46,9 +46,12 @@ if __name__ == "__main__":
             pass
         if message == "manual":
             # print("manual mode activated")
+            global pathName
             lat = []
             lon = []
+            heading = []
             logPath = False
+            pathName = ""
             while message != '0':
                 try:
                     data = receiver.read_data_from(remoteTransmitter, 0.1)
@@ -58,6 +61,15 @@ if __name__ == "__main__":
                 except:
                     message = ""
                 if message == "3":
+                    try:
+                        receiver.flush_queues()
+                        receiver.send_data_async(remoteTransmitter, "Please supply a file name with a .csv extension within the next 30s")
+                        receiver.flush_queues()
+                        data = receiver.read_data_from(remoteTransmitter, 30)
+                        name = data.data.decode("utf8")
+                    except:
+                        pathName = "defaultName.csv"
+                    methods.logDataInit(pathName)
                     lat = []
                     lon = []
                     heading = []
@@ -74,18 +86,42 @@ if __name__ == "__main__":
                                receiver.send_data_async(remoteTransmitter, "Success!")
                         except Exception as e:
                             receiver.send_data_async(remoteTransmitter, str(e))
+
+                if len(lat) > 20:
+                    try:
+                        data = []
+                        i  = 0
+                        while i < len(lat):
+                            data.append(lat[i]+","+lon[i]+","+heading[i])
+                            i += 1
+                        methods.logDataUpdate(data, pathName)
+                        lat = []
+                        lon = []
+                        heading = []
+                    except Exception as e:
+                        print(str(e))
+                        receiver.send_data_async(remoteTransmitter, str(e))
+
                 if message == "4":
+                    # try:
+                        # receiver.flush_queues()
+                        # receiver.send_data_async(remoteTransmitter, "Please supply a file name with a .csv extension within the next 30s")
+                        # receiver.flush_queues()
+                        # data = receiver.read_data_from(remoteTransmitter, 30)
+                        # name = data.data.decode("utf8")
+                    logPath = False
+                    # except:
+                    #     name = "defaultName.csv"
                     try:
-                        receiver.flush_queues()
-                        receiver.send_data_async(remoteTransmitter, "Please supply a file name with a .csv extension within the next 30s")
-                        receiver.flush_queues()
-                        data = receiver.read_data_from(remoteTransmitter, 30)
-                        name = data.data.decode("utf8")
-                        logPath = False
-                    except:
-                        name = "defaultName.csv"
-                    try:
-                        methods.logPath(lat,lon,name)
+                        data = []
+                        i  = 0
+                        while i < len(lat):
+                            data.append(lat[i]+","+lon[i]+","+heading[i])
+                            i += 1
+                        methods.logDataUpdate(data, pathName)
+                        lat = []
+                        lon = []
+                        heading = []
                     except Exception as e:
                         print(str(e))
                         receiver.send_data_async(remoteTransmitter, str(e))

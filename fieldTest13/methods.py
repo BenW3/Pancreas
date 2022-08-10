@@ -422,6 +422,16 @@ def logPath(lat, lon, name):
             writer.writerow([lat[i],lon[i]])
             i += 1
 
+def logDataInit(name):
+       with open(name, 'w') as f:
+        f.write('')
+def logDataUpdate(data, name):
+    with open(name, 'a', newline = '') as f:
+        i = 0
+        while i < len(data):
+            f.write(data[i]+'\n')
+            i += 1
+
 
 def initializeWaypointFollower(name):
     """
@@ -477,6 +487,10 @@ def waypointFollower(ki,kp,kd,lookahead, receiver, remoteTransmitter, filename):
     global latPath
     global lonPath
     global Speed
+    # logDataInit("traversedPath.csv")
+    # logDataInit("errorOutput.csv")
+    # logDataInit("PIDoutput.csv")
+    # logDataInit("powerConsumption.csv")
     outputlist = []
     errplot = []
     timeplot = []
@@ -539,6 +553,7 @@ def waypointFollower(ki,kp,kd,lookahead, receiver, remoteTransmitter, filename):
 
     # Output to steering motors
         writeToArduino("S"+str(output)+","+str(Speed)+","+str(0), steeringArduino)
+
     # Check for obstacles
 
     # Turn parallel to obstacle
@@ -547,4 +562,4 @@ def waypointFollower(ki,kp,kd,lookahead, receiver, remoteTransmitter, filename):
     logPath(latPath,lonPath,"traversedPath.csv")
     logPath(timeplot,errplot,"erroroutput.csv")
     logPath(timeplot,outputlist,"PIDoutput.csv")
-    logPath(timeplot, pwrplot, "PowerConsumption.csv")
+    logPath(timeplot, pwrplot, "powerConsumption.csv")
