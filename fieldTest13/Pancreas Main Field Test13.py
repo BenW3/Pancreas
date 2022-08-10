@@ -60,6 +60,7 @@ if __name__ == "__main__":
                 if message == "3":
                     lat = []
                     lon = []
+                    heading = []
                     logPath = False
                     i = 0
                     while i < 5 and logPath == False: 
@@ -100,6 +101,7 @@ if __name__ == "__main__":
                             [latAdjusted, lonAdjusted] = methods.XYtolatlon(xcenter,ycenter,aspectRatio)
                             lat.append(latAdjusted)
                             lon.append(lonAdjusted)
+                            heading.append(robotAngle)
                     except Exception as e:
                         exception_type, exception_object, exception_traceback = sys.exc_info()
                         filename = exception_traceback.tb_frame.f_code.co_filename
