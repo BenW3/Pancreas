@@ -12,6 +12,7 @@ import serial.tools.list_ports
 
 # steeringArduino = serial.Serial(port = 'COM13', baudrate=9600, timeout=5)
 logFrequency = 10 # How frequent should data be logged? s, min?
+listSize = 50 #How large list is before logging
 robotLength = 4.0 #m
 robotWidth = 10.0 #m
 angleSignal = 0  # Radians
@@ -20,6 +21,7 @@ mode = 1  # Steering mode
 setpoint = 0  # for synchronous steering
 Speed = 1700
 speedset = -1
+
 
 def getSerialPorts():
     """
@@ -94,7 +96,8 @@ def readGPS():
         gpsLat = dataParse.latitude
         gpsLon = dataParse.longitude
         sats = dataParse.num_sats
-        return gpsLat, gpsLon, int(sats)
+        time = dataParse.timestamp
+        return gpsLat, gpsLon, int(sats), time
     except Exception as e:
         return e
     
@@ -196,7 +199,7 @@ def calcAngleError(x1, y1, x2, y2, xp, yp, robotAngle, r):
     minDist = distances.index(min(distances))
     descriminant = Bcoef**2-4*Acoef*Ccoef
 
-    if distances[minDist] > r or descriminant < 0:
+    if distances[minDist] > r or descriminant < 0:    
         if minDist == 0:
             x = x1
             y = y1
@@ -458,7 +461,7 @@ def initializeWaypointFollower(name):
         i += 1
 
     try:
-        [gps_lat,gps_lon,sats] = readGPS()
+        [gps_lat,gps_lon,sats, time] = readGPS()
 
         [xp, yp] = latlonToXY(gps_lat, gps_lon, aspectRatio)
     except:
@@ -487,14 +490,15 @@ def waypointFollower(ki,kp,kd,lookahead, receiver, remoteTransmitter, filename):
     global latPath
     global lonPath
     global Speed
-    # logDataInit("traversedPath.csv")
-    # logDataInit("errorOutput.csv")
-    # logDataInit("PIDoutput.csv")
-    # logDataInit("powerConsumption.csv")
+    logDataInit("traversedPath.csv")
+    logDataInit("errorOutput.csv")
+    logDataInit("PIDoutput.csv")
+    logDataInit("powerConsumption.csv")
     outputlist = []
     errplot = []
     timeplot = []
     pwrplot = []
+    trueTime = []
     logTimer = perf_counter()
     waypointFollwerVariableInits(ki,kp,kd,lookahead)
     initializeWaypointFollower(filename)
@@ -502,7 +506,7 @@ def waypointFollower(ki,kp,kd,lookahead, receiver, remoteTransmitter, filename):
     # Take GPS measurement and compass measurement
         robotAngle = deg2rad(float(write_read('C', sensorArduino)))
         try:
-            [gps_lat,gps_lon,sats] = readGPS()
+            [gps_lat,gps_lon,sats, time] = readGPS()
             if sats != 0:
                 [xraw, yraw] = latlonToXY(gps_lat, gps_lon, aspectRatio)
                 xcenter = xraw+(robotWidth/2)*cos(robotAngle)
@@ -545,6 +549,7 @@ def waypointFollower(ki,kp,kd,lookahead, receiver, remoteTransmitter, filename):
         timeplot.append(perf_counter())
         if timeplot[-1] - logTimer > logFrequency:
             pwrplot.append(write_read('P',sensorArduino))
+            trueTime.append(time)
             logTimer = timeplot[-1]
     # Run error through PID control for steering
         output = computePID(-err, Speed)
@@ -554,12 +559,102 @@ def waypointFollower(ki,kp,kd,lookahead, receiver, remoteTransmitter, filename):
     # Output to steering motors
         writeToArduino("S"+str(output)+","+str(Speed)+","+str(0), steeringArduino)
 
+        if len(latPath) > listSize:
+            data = []
+            i  = 0
+            while i < len(latPath):
+                data.append(str(latPath[i])+","+str(lonPath[i])+","+str(heading[i]))
+                i += 1
+            try:
+                logDataUpdate(data, "traversedPath.csv")
+                latPath = []
+                lonPath = []
+                heading = []
+            except Exception as e:
+                print(str(e))
+                receiver.send_data_async(remoteTransmitter, str(e))
+        if len(timeplot) > listSize:
+            data1 = []
+            data2 = []
+            i = 0
+            while i < len(timeplot):
+                data1.append(str(timeplot[i])+","+str(errplot[i]))
+                data2.append(str(timeplot[i])+","+str(outputlist[i]))
+                i += 1
+            try:
+                logDataUpdate(data1, "errorOutput.csv")
+                logDataUpdate(data2, "PIDoutput.csv")
+                timeplot = []
+                errplot = []
+                outputlist = []
+            except Exception as e:
+                print(str(e))
+                receiver.send_data_async(remoteTransmitter, str(e))
+        if len(pwrplot) > listSize:
+            data = []
+            i = 0
+            while i < len(pwrplot):
+                data.append(str(trueTime[i])+","+str(pwrplot[i]))
+                i += 1
+            try:   
+                logDataUpdate(data, "powerConsumption.csv")
+                trueTime = []
+                pwrplot = []
+            except Exception as e:
+                print(str(e))
+                receiver.send_data_async(remoteTransmitter, str(e))    
     # Check for obstacles
 
     # Turn parallel to obstacle
     
     #Log robot path
-    logPath(latPath,lonPath,"traversedPath.csv")
-    logPath(timeplot,errplot,"erroroutput.csv")
-    logPath(timeplot,outputlist,"PIDoutput.csv")
-    logPath(timeplot, pwrplot, "powerConsumption.csv")
+
+
+    data = []
+    i  = 0
+    while i < len(latPath):
+        data.append(str(latPath[i])+","+str(lonPath[i])+","+str(heading[i]))
+        i += 1
+    try:
+        logDataUpdate(data, "traversedPath.csv")
+        latPath = []
+        lonPath = []
+        heading = []
+    except Exception as e:
+        print(str(e))
+        receiver.send_data_async(remoteTransmitter, str(e))
+
+    data1 = []
+    data2 = []
+    i = 0
+    while i < len(timeplot):
+        data1.append(str(timeplot[i])+","+str(errplot[i]))
+        data2.append(str(timeplot[i])+","+str(outputlist[i]))
+        i += 1
+    try:
+        logDataUpdate(data1, "errorOutput.csv")
+        logDataUpdate(data2, "PIDoutput.csv")
+        timeplot = []
+        errplot = []
+        outputlist = []
+    except Exception as e:
+        print(str(e))
+        receiver.send_data_async(remoteTransmitter, str(e))
+
+    data = []
+    i = 0
+    while i < len(pwrplot):
+        data.append(str(trueTime[i])+","+str(pwrplot[i]))
+        i += 1
+    try:   
+        logDataUpdate(data, "powerConsumption.csv")
+        trueTime = []
+        pwrplot = []
+    except Exception as e:
+        print(str(e))
+        receiver.send_data_async(remoteTransmitter, str(e))   
+
+    # logPath(latPath,lonPath,"traversedPath.csv")
+    # logPath(timeplot,errplot,"errorOutput.csv")
+    # logPath(timeplot,outputlist,"PIDoutput.csv")
+    # logPath(timeplot, pwrplot, "powerConsumption.csv")

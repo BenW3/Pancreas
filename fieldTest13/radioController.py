@@ -13,7 +13,7 @@ def on_press(key):
         if key.char == '0':
             print("manual stopped")
             return False
-        elif key.char == '4': # fix this
+        elif key.char == '3': # fix this
             print("manual paused, press enter")
             inputName = True
             return False

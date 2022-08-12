@@ -62,18 +62,23 @@ if __name__ == "__main__":
                     message = ""
                 if message == "3":
                     try:
+                        print("Getting file name . . .")
                         receiver.flush_queues()
                         receiver.send_data_async(remoteTransmitter, "Please supply a file name with a .csv extension within the next 30s")
                         receiver.flush_queues()
                         data = receiver.read_data_from(remoteTransmitter, 30)
-                        name = data.data.decode("utf8")
+                        pathName = data.data.decode("utf8")
                     except:
                         pathName = "defaultName.csv"
-                    methods.logDataInit(pathName)
+                    try:
+                        methods.logDataInit(pathName)
+                    except Exception as e:
+                        receiver.send_data_async(remoteTransmitter, str(e))
                     lat = []
                     lon = []
                     heading = []
                     logPath = False
+                    print("Getting gps . . .")
                     i = 0
                     while i < 5 and logPath == False: 
                         try:
@@ -84,15 +89,17 @@ if __name__ == "__main__":
                             if satnum !=0:
                                logPath = True
                                receiver.send_data_async(remoteTransmitter, "Success!")
+                               print("Recording path")
                         except Exception as e:
                             receiver.send_data_async(remoteTransmitter, str(e))
 
                 if len(lat) > 20:
+                    print(str(len(lat)) + " vals in list")
                     try:
                         data = []
                         i  = 0
                         while i < len(lat):
-                            data.append(lat[i]+","+lon[i]+","+heading[i])
+                            data.append(str(lat[i])+","+str(lon[i])+","+str(heading[i]))
                             i += 1
                         methods.logDataUpdate(data, pathName)
                         lat = []
@@ -116,7 +123,7 @@ if __name__ == "__main__":
                         data = []
                         i  = 0
                         while i < len(lat):
-                            data.append(lat[i]+","+lon[i]+","+heading[i])
+                            data.append(str(lat[i])+","+str(lon[i])+","+str(heading[i]))
                             i += 1
                         methods.logDataUpdate(data, pathName)
                         lat = []

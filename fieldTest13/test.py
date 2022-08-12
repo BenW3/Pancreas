@@ -1,4 +1,3 @@
-from tokenize import maybe
 import methods
 name = "testfile.csv"
 methods.logDataInit(name)
