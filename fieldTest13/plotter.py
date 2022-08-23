@@ -1,6 +1,7 @@
 import matplotlib.pyplot as plt
 from numpy import genfromtxt
 import methods
+from math import cos, sin
 
 
 error = []
@@ -10,10 +11,11 @@ xtraversed = []
 ytraversed = []
 xdesired = []
 ydesired = []
-
+headingx = []
+headingy = []
 errordata = genfromtxt(r'G:\test2\erroroutput.csv', delimiter=',')
 PIDdata = genfromtxt(r'G:\test2\PIDoutput.csv', delimiter=',')
-pathdata = genfromtxt(r'G:\test2\traversedPath.csv', delimiter=',')
+pathdata = genfromtxt(r'G:\testpathstreet.csv', delimiter=',')
 desiredpathdata = genfromtxt(r'G:\test2\street3.csv', delimiter=',')
 
 refLat = methods.deg2rad(desiredpathdata[0,0])
@@ -23,6 +25,8 @@ i = 0
 while i < len(pathdata):
     
     [xpoints, ypoints] = methods.latlonToXY(pathdata[i,0],pathdata[i,1],aspectRatio)
+    headingx.append(sin(pathdata[i,2]))
+    headingy.append(cos(pathdata[i,2]))
     xtraversed.append(xpoints)
     ytraversed.append(ypoints)
     i += 1
@@ -47,6 +51,7 @@ fig, ax = plt.subplots()
 ax.set_aspect(1)
 plt.plot(xtraversed,ytraversed, label="Robot Path")
 plt.plot(xdesired,ydesired, '-', label = "Waypoint Path")
+plt.quiver(xtraversed,ytraversed,headingx,headingy)
 plt.ylabel('meters (+north, -south)')
 plt.xlabel('meters (+east, -west)', labelpad=20)
 leg = plt.legend(loc = 'upper left', bbox_to_anchor=(-0.1, -0.2), shadow=True)
