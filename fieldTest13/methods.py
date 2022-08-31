@@ -12,7 +12,7 @@ import serial.tools.list_ports
 
 # steeringArduino = serial.Serial(port = 'COM13', baudrate=9600, timeout=5)
 logFrequency = 10 # How frequent should data be logged? s, min?
-listSize = 50 #How large list is before logging
+listSize = 100 #How large list is before logging
 robotLength = 4.0 #m
 robotWidth = 10.0 #m
 angleSignal = 0  # Radians
@@ -396,10 +396,6 @@ def computePID(err, dutycycle):
     intMax = 2.0
     nowTime = perf_counter()
     deltaT = nowTime-oldTime
-    try:
-        err = atan(err*0.5*(robotLength/(velocity*deltaT))) #convert to actual robot turn angle
-    except:
-        pass
     intErr += err*deltaT
     if abs(intErr) > intMax:
         intErr = sign(intErr)*intMax 
@@ -476,6 +472,8 @@ def initializeWaypointFollower(name):
         [xlastWaypoint,ylastWaypoint] = xwaypoints[wpNum-1],ywaypoints[wpNum-1]
     while distanceToWaypoint(xp,yp,xWaypoint,yWaypoint) < r: #distance is in m, maybe use lat/lon to X/Y?
         wpNum +=1
+        if wpNum >= len(waypoints):
+            break
         [xWaypoint,yWaypoint] = xwaypoints[wpNum],ywaypoints[wpNum]
         print("waypoint "+str(wpNum)+" reached")
     oldErr = calcAngleError(xlastWaypoint,ylastWaypoint,xWaypoint,yWaypoint,xp,yp,robotAngle,r)
@@ -490,6 +488,10 @@ def waypointFollower(ki,kp,kd,lookahead, receiver, remoteTransmitter, filename):
     global latPath
     global lonPath
     global Speed
+    global xlastWaypoint
+    global ylastWaypoint
+    global xWaypoint
+    global yWaypoint
     logDataInit("traversedPath.csv")
     logDataInit("errorOutput.csv")
     logDataInit("PIDoutput.csv")
@@ -521,15 +523,17 @@ def waypointFollower(ki,kp,kd,lookahead, receiver, remoteTransmitter, filename):
             pass
     
     # Read and select waypoint values
-        [xWaypoint,yWaypoint] = xwaypoints[wpNum],ywaypoints[wpNum]
-        if wpNum == 0:
-            [xlastWaypoint, ylastWaypoint] = [xWaypoint, yWaypoint]
-        else:
-            [xlastWaypoint,ylastWaypoint] = xwaypoints[wpNum-1],ywaypoints[wpNum-1]
     # If robot within threshold distance increment to next waypoint
         while distanceToWaypoint(xp,yp,xWaypoint,yWaypoint) < r: #distance is in m, maybe use lat/lon to X/Y?
             wpNum +=1
+            if wpNum >= len(waypoints): # Check for more waypoints
+                writeToArduino("S0,1500,0", steeringArduino)
+                break
             [xWaypoint,yWaypoint] = xwaypoints[wpNum],ywaypoints[wpNum]
+            if wpNum == 0:
+                [xlastWaypoint, ylastWaypoint] = [xWaypoint, yWaypoint]
+            else:
+                [xlastWaypoint,ylastWaypoint] = xwaypoints[wpNum-1],ywaypoints[wpNum-1]
             print("waypoint "+str(wpNum)+" reached")
         if wpNum >= len(waypoints): # Check for more waypoints
             writeToArduino("S0,1500,0", steeringArduino)
@@ -558,7 +562,7 @@ def waypointFollower(ki,kp,kd,lookahead, receiver, remoteTransmitter, filename):
 
     # Output to steering motors
         writeToArduino("S"+str(output)+","+str(Speed)+","+str(0), steeringArduino)
-
+    #writing data to file
         if len(latPath) > listSize:
             data = []
             i  = 0
