@@ -1,12 +1,21 @@
 from digi.xbee.devices import XBeeDevice, RemoteXBeeDevice, XBee64BitAddress
 import pynput
-transmitter = XBeeDevice("COM21", 9600)
+import serial.tools.list_ports
+# print(list(*serial.tools.list_ports.comports()))
+#For windows, comment out the below try, except lines and replace radioPort with a the name of the COM port that the radio is connected to.
+print(list(*serial.tools.list_ports.grep('FT231X')))
+try:
+    radioPort = list(*serial.tools.list_ports.grep('FT231X'))[0]
+except:
+    print("Radio not connected.")
+transmitter = XBeeDevice(radioPort, 9600)
+
 remoteReceiver = RemoteXBeeDevice(transmitter, XBee64BitAddress.from_hex_string("0013A20040FCB774"))
 transmitter.open()
 inputName = False
 
 def on_press(key):
-    global inputName
+    global inputName21
     try:
         print(key.char)
         transmitter.send_data_async(remoteReceiver, key.char)
