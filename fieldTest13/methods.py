@@ -13,8 +13,8 @@ import serial.tools.list_ports
 # steeringArduino = serial.Serial(port = 'COM13', baudrate=9600, timeout=5)
 logFrequency = 10 # How frequent should data be logged? s, min?
 listSize = 100 #How large list is before logging
-robotLength = 4.0 #m
-robotWidth = 10.0 #m
+robotLength = 1.2192 #m, 4ft
+robotWidth = 3.048 #m, 10ft
 angleSignal = 0  # Radians
 velocitySignal = 0  # Microseconds
 mode = 1  # Steering mode

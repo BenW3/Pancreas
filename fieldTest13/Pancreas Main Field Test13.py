@@ -135,7 +135,7 @@ if __name__ == "__main__":
 
                 if logPath == True:
                     try:
-                        [gps_lat, gps_lon, sats] = methods.readGPS()
+                        [gps_lat, gps_lon, sats] = methods.readGPS()[0:3]
                         robotAngle = methods.deg2rad(float(methods.write_read('C', methods.sensorArduino)))
                         if sats != 0:
                             [xraw, yraw] = methods.latlonToXY(gps_lat, gps_lon, aspectRatio)
@@ -160,7 +160,7 @@ if __name__ == "__main__":
 
         elif message == "set speed":
             try:
-                receiver.send_data_async(remoteTransmitter, 'Input a speed in microseconds.')
+                receiver.send_data_async(remoteTransmitter, 'Input a speed in microseconds from 1500 to 2000. Current speed is ' + str(methods.Speed))
                 receiver.flush_queues()
                 data = receiver.read_data_from(remoteTransmitter, 30)
                 speed = int(data.data.decode("utf8"))
