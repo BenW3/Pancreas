@@ -87,7 +87,7 @@ if __name__ == "__main__":
                     while i < 5 and logPath == False: 
                         try:
                             i += 1
-                            [reflat,satnum] = methods.readGPS()[::2]
+                            [reflat,satnum] = methods.readGPS()[0:3:2]
                             aspectRatio = cos(reflat)
                             receiver.send_data_async(remoteTransmitter, "try "+str(i)+", "+str(reflat))
                             if satnum !=0:

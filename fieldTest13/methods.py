@@ -97,7 +97,8 @@ def readGPS():
         gpsLon = dataParse.longitude
         sats = dataParse.num_sats
         time = dataParse.timestamp
-        return gpsLat, gpsLon, int(sats), time
+        qual = dataParse.gps_qual
+        return gpsLat, gpsLon, int(sats), time, int(qual)
     except Exception as e:
         return e
     
@@ -457,7 +458,7 @@ def initializeWaypointFollower(name):
         i += 1
 
     try:
-        [gps_lat,gps_lon,sats, time] = readGPS()
+        [gps_lat,gps_lon] = readGPS()[0:2]
 
         [xp, yp] = latlonToXY(gps_lat, gps_lon, aspectRatio)
     except:
@@ -508,7 +509,7 @@ def waypointFollower(ki,kp,kd,lookahead, receiver, remoteTransmitter, filename):
     # Take GPS measurement and compass measurement
         robotAngle = deg2rad(float(write_read('C', sensorArduino)))
         try:
-            [gps_lat,gps_lon,sats, time] = readGPS()
+            [gps_lat,gps_lon,sats, time] = readGPS()[0:4]
             if sats != 0:
                 [xraw, yraw] = latlonToXY(gps_lat, gps_lon, aspectRatio)
                 xcenter = xraw+(robotWidth/2)*cos(robotAngle)
