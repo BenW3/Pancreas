@@ -80,7 +80,7 @@ def setSpeed(input):
 
 def readGPS():
     """
-    It reads the GPS Serial port and translates NMEA to usable values. The usb port for the gps needs to be the leftmost one on this particular panda.
+    It reads the GPS Serial port and translates NMEA to usable values.
     """
     try:
         data = ""

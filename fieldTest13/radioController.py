@@ -23,7 +23,7 @@ def on_press(key):
             print("manual stopped")
             return False
         elif key.char == '3': # fix this
-            print("manual paused, press enter")
+            print("manual paused, press enter after supplying filename with .csv extension")
             inputName = True
             return False
         elif key.char == '5':
