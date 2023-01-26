@@ -3,9 +3,9 @@ The Pancreas is an autonomous agricutural robot. There was an acronym that went 
 
 Put the following at the end of the .bashrc file on the Pancreas' onboard computer.
 
+```
 echo Running at boot
 
-```
 cd /media/pancreas/Pancreas\ SD
 
 /bin/python3 /media/pancreas/Pancreas\ SD/fieldTest13/Pancreas\ Main\ Field\ Test13.py &
