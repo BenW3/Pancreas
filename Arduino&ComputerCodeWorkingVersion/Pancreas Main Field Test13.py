@@ -7,7 +7,6 @@ import os
 import glob
 from math import cos, sin
 import sys
-from time import perf_counter
 #--------------------
 # Pancreas Main Code
 #--------------------
@@ -26,7 +25,7 @@ from time import perf_counter
     # - CHECK - Read power
     #................
 #--------------------
-powerReadingDelay = 10
+
 aspectRatio = 0.0
 methods.getSerialPorts()
 receiver = XBeeDevice(methods.radioPort, 9600)
@@ -62,8 +61,6 @@ if __name__ == "__main__":
                 except:
                     message = ""
                 if message == "3":
-                    powerName = "PowerData.csv"
-                    CurrentTime = perf_counter()
                     try:
                         print("Getting file name . . .")
                         receiver.flush_queues()
@@ -80,7 +77,6 @@ if __name__ == "__main__":
                     lat = []
                     lon = []
                     heading = []
-                    power = []
                     logPath = False
                     print("Getting gps . . .")
                     i = 0
@@ -112,15 +108,6 @@ if __name__ == "__main__":
                     except Exception as e:
                         print(str(e))
                         receiver.send_data_async(remoteTransmitter, str(e))
-                
-                if len(power) > 20:
-                    # print(str(len(power)) + " vals in list")
-                    try:
-                        methods.logDataUpdate(power, powerName)
-                        power = []
-                    except Exception as e:
-                        print(str(e))
-                        receiver.send_data_async(remoteTransmitter, str(e))
 
                 if message == "4":
                     # try:
@@ -145,20 +132,8 @@ if __name__ == "__main__":
                     except Exception as e:
                         print(str(e))
                         receiver.send_data_async(remoteTransmitter, str(e))
-                        
-                    try:
-                        methods.logDataUpdate(power, powerName)
-                        power = []
-                    except Exception as e:
-                        print(str(e))
-                        receiver.send_data_async(remoteTransmitter, str(e))
 
                 if logPath == True:
-                    if (CurrentTime - perf_counter()) > powerReadingDelay:
-                        try:
-                            power.append(methods.write_read('P',methods.sensorArduino))
-                        except:
-                            pass
                     try:
                         [gps_lat, gps_lon, sats] = methods.readGPS()[0:3]
                         robotAngle = methods.deg2rad(float(methods.write_read('C', methods.sensorArduino)))
