@@ -50,6 +50,7 @@ if __name__ == "__main__":
             global pathName
             lat = []
             lon = []
+            power = []
             heading = []
             logPath = False
             pathName = ""
