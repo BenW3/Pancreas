@@ -15,7 +15,7 @@ transmitter.open()
 inputName = False
 
 def on_press(key):
-    global inputName21
+    global inputName
     try:
         print(key.char)
         transmitter.send_data_async(remoteReceiver, key.char)
@@ -23,7 +23,7 @@ def on_press(key):
             print("manual stopped")
             return False
         elif key.char == '3': # fix this
-            print("manual paused, press enter after supplying filename with .csv extension")
+            print("manual paused, press enter once")
             inputName = True
             return False
         elif key.char == '5':

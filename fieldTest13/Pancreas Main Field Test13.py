@@ -48,6 +48,8 @@ if __name__ == "__main__":
         if message == "manual":
             # print("manual mode activated")
             global pathName
+            global powerName
+            global CurrentTime
             lat = []
             lon = []
             power = []
@@ -63,7 +65,7 @@ if __name__ == "__main__":
                 except:
                     message = ""
                 if message == "3":
-                    powerName = "PowerData.csv"
+                    # powerName = "powerDefault.csv"
                     CurrentTime = perf_counter()
                     try:
                         print("Getting file name . . .")
@@ -72,16 +74,20 @@ if __name__ == "__main__":
                         receiver.flush_queues()
                         data = receiver.read_data_from(remoteTransmitter, 30)
                         pathName = data.data.decode("utf8")
+                        powerName = str("power"+str(pathName))
                     except:
-                        pathName = "defaultName.csv"
+                        pathName = "pathDefaultName.csv"
+                        powerName = "powerDefaultName.csv"
                     try:
                         methods.logDataInit(pathName)
+                        methods.logDataInit(powerName)
                     except Exception as e:
                         receiver.send_data_async(remoteTransmitter, str(e))
                     lat = []
                     lon = []
                     heading = []
                     power = []
+                    power.append("testline")
                     logPath = False
                     print("Getting gps . . .")
                     i = 0
@@ -156,8 +162,10 @@ if __name__ == "__main__":
 
                 if logPath == True:
                     if (CurrentTime - perf_counter()) > powerReadingDelay:
+                        CurrentTime = perf_counter()
                         try:
-                            power.append(methods.write_read('P',methods.sensorArduino))
+
+                            power.append(str(methods.write_read('P', methods.sensorArduino)))
                         except:
                             pass
                     try:
