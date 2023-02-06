@@ -87,7 +87,7 @@ if __name__ == "__main__":
                     lon = []
                     heading = []
                     power = []
-                    power.append("testline")
+                    power.append("starting file")
                     logPath = False
                     print("Getting gps . . .")
                     i = 0
@@ -154,6 +154,7 @@ if __name__ == "__main__":
                         receiver.send_data_async(remoteTransmitter, str(e))
                         
                     try:
+                        power.append("ending file")
                         methods.logDataUpdate(power, powerName)
                         power = []
                     except Exception as e:
@@ -163,6 +164,7 @@ if __name__ == "__main__":
                 if logPath == True:
                     if (CurrentTime - perf_counter()) > powerReadingDelay:
                         CurrentTime = perf_counter()
+                        receiver.send_data_async(remoteTransmitter, str("taking power reading"))
                         try:
 
                             power.append(str(methods.write_read('P', methods.sensorArduino)))
