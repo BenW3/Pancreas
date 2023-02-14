@@ -168,7 +168,7 @@ if __name__ == "__main__":
                         # receiver.send_data_async(remoteTransmitter, str("taking power reading"))
                         try:
 
-                            power.append(str(methods.write_read('P', methods.sensorArduino)))
+                            power.append(float(methods.write_read('P', methods.sensorArduino)))
                         except:
                             pass
                     try:

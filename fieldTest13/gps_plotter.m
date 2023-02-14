@@ -3,7 +3,7 @@
 % f = fopen('data.csv','r');
 % A = textscan(f,'%f');
 % fclose(f);
-data = readmatrix('G:newyear.csv');
+data = readmatrix('G:\filteredpaths\test5filtered.csv');
 
 Latitude = data(:,1);
 % Latitude = Latitude/1e4
