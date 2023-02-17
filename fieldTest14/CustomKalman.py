@@ -35,6 +35,9 @@ class TwoDKalman():
         self.state = np.dot(self.F, self.state)
         self.P = np.dot(np.dot(self.F, self.P), self.F.T) + self.Q
         # pass
-    def filter(self, measured_state, dt):
-        pass
+    def filter(self, measured_state, dt = None):
+        self.predict()
+        filtered_position = self.update(measured_state)
+        return filtered_position
+        
 # F = np.eye(5)

@@ -45,7 +45,7 @@ def XYtolatlon(x, y, aspectRatio):
 
 name = "test5.csv"
 velocity = 0.3 #m/s guess
-dt = 1.2 #sec guess
+dt = 1 #sec guess
 waypoints = genfromtxt(name, delimiter=',')
 refLat = deg2rad(waypoints[0,0])
 aspectRatio = cos(refLat)
@@ -58,8 +58,8 @@ filteredLat = []
 filteredLon = []
 data = []
 i = 0
-x_std = 10 #m
-y_std = 10
+x_std = 15 #m
+y_std = 15
 vx_std = 0.05 #radians
 vy_std = 0.05
 while i < len(waypoints):
