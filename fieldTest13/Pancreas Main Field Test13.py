@@ -129,6 +129,7 @@ if __name__ == "__main__":
                     # print(str(len(power)) + " vals in list")
                     try:
                         methods.logDataUpdate(power, powerName)
+                        # methods.logDataUpdate(["logging"], powerName)
                         power = []
                     except Exception as e:
                         print(str(e))
@@ -160,7 +161,7 @@ if __name__ == "__main__":
                         receiver.send_data_async(remoteTransmitter, str(e))
                         
                     try:
-                        # power.append("ending file")
+                        power.append("ending file")
                         methods.logDataUpdate(power, powerName)
                         power = []
                     except Exception as e:
@@ -168,15 +169,16 @@ if __name__ == "__main__":
                         receiver.send_data_async(remoteTransmitter, str(e))
 
                 if logPath == True:
-                    # receiver.send_data_async(remoteTransmitter, str(CurrentTime - perf_counter()))
+                    # receiver.send_data_async(remoteTransmitter, str(perf_counter() - CurrentTime))
                     if (perf_counter()-CurrentTime) > powerReadingDelay:
                         CurrentTime = perf_counter()
-                        # receiver.send_data_async(remoteTransmitter, str("taking power reading"))
+                        receiver.send_data_async(remoteTransmitter, str("taking power reading"))
                         try:
-
-                            power.append(float(methods.write_read('P', methods.sensorArduino)))
-                        except:
-                            pass
+                            power.append(methods.write_read('P', methods.sensorArduino))
+                            receiver.send_data_async(remoteTransmitter, str(len(power)))
+                        except Exception as e:
+                            receiver.send_data_async(remoteTransmitter, str(e))
+                            receiver.send_data_async(remoteTransmitter, str("power reading failed"))
                     try:
                         [gps_lat, gps_lon, sats] = methods.readGPS()[0:3]
                         robotAngle = methods.deg2rad(float(methods.write_read('C', methods.sensorArduino)))
