@@ -196,7 +196,7 @@ if __name__ == "__main__":
                     if (perf_counter()-CurrentTime) > powerReadingDelay:
                         CurrentTime = perf_counter()
                         try:
-                            power.append(float(methods.write_read('P', methods.sensorArduino)))
+                            power.append(methods.write_read('P', methods.sensorArduino))
                         except:
                             pass
                     try:
