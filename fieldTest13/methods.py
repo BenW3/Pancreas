@@ -19,7 +19,7 @@ angleSignal = 0  # Radians
 velocitySignal = 0  # Microseconds
 mode = 1  # Steering mode
 setpoint = 0  # for synchronous steering
-Speed = 1700
+Speed = 1600
 speedset = -1
 
 

@@ -26,7 +26,7 @@ from time import perf_counter
     # - CHECK - Read power
     #................
 #--------------------
-powerReadingDelay = 10
+powerReadingDelay = 5
 aspectRatio = 0.0
 methods.getSerialPorts()
 receiver = XBeeDevice(methods.radioPort, 9600)

@@ -200,18 +200,11 @@ if __name__ == "__main__":
                         except:
                             pass
                     try:
-                        [gps_lat, gps_lon, sats] = methods.readGPS()[0:3]
-                        robotAngle = methods.deg2rad(float(methods.write_read('C', methods.sensorArduino)))
+                        [lattitude, longitude, x, y, angle, sats, time, quality] = methods.get_filtered_state(aspectRatio)
                         if sats != 0:
-                            [xraw, yraw] = methods.latlonToXY(gps_lat, gps_lon, aspectRatio)
-                            xcenter = xraw+(methods.robotWidth/2.0)*cos(robotAngle)
-                            ycenter = yraw-(methods.robotWidth/2.0)*sin(robotAngle)
-                            measured_state = np.array([[xcenter],[ycenter],[sin(robotAngle)*methods.velocityMagnitude],[cos(robotAngle)*methods.velocityMagnitude]])
-                            [xfilter,yfilter] = methods.filteredGPS()
-                            [latAdjusted, lonAdjusted] = methods.XYtolatlon(xfilter,yfilter,aspectRatio)
-                            lat.append(latAdjusted)
-                            lon.append(lonAdjusted)
-                            heading.append(robotAngle)
+                            lat.append(lattitude)
+                            lon.append(longitude)
+                            heading.append(angle)
                             dt.append(perf_counter() - t1)
                             t1 = perf_counter()
                     except Exception as e:
