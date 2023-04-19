@@ -9,9 +9,10 @@ from time import perf_counter
 from numpy import genfromtxt, sign, sort
 import csv
 import serial.tools.list_ports
-
+from CustomKalman import TwoDKalman
+import numpy as np
 # steeringArduino = serial.Serial(port = 'COM13', baudrate=9600, timeout=5)
-logFrequency = 10 # How frequent should data be logged? s, min?
+logFrequency = 5 # How frequent should data be logged (s)
 listSize = 100 #How large list is before logging
 robotLength = 1.2192 #m, 4ft
 robotWidth = 3.048 #m, 10ft
@@ -21,6 +22,11 @@ mode = 1  # Steering mode
 setpoint = 0  # for synchronous steering
 Speed = 1600
 speedset = -1
+XVariance = 5 #noise variance in meters for longitude
+YVariance = 5 #noise variance in meters for latitude
+XVelocityVariance = 0.05 #noise varience in measured velocity
+YVelocityVariance = 0.05 #noise varience in measured velocity
+velocityMagnitude = 0.3 #m/s guess
 
 
 def getSerialPorts():
@@ -101,8 +107,54 @@ def readGPS():
         return gpsLat, gpsLon, int(sats), time, int(qual)
     except Exception as e:
         return e
-    
 
+def get_filtered_state(aspect_ratio, receiver, remoteTransmitter):
+    """
+    This function reads the GPS Serial port and translates NMEA to usable values. It returns lattitutde and longitude, cartesian coordinates, heading, satellites connected, time, and gps quality.
+    """
+    try:
+        data = ""
+        gps = serial.Serial(port = gpsPort, baudrate=115200, timeout=5)
+        gps.flushInput()  # flush input buffer, discarding all its contents
+        gps.flushOutput()
+        sleep(.05)
+        data = gps.readline()
+        sleep(.05)
+        gps.close()
+        data = data.decode("utf-8")
+        dataParse = pynmea2.parse(data)
+        gpsLat = dataParse.latitude
+        gpsLon = dataParse.longitude
+        sats = dataParse.num_sats
+        if round(gpsLat) == 0 and round(gpsLon) == 0:
+            sats = 0
+            gpsLat = gps_lat_old
+            gpsLon = gps_lon_old
+
+        time = dataParse.timestamp
+        qual = dataParse.gps_qual
+        robotAngle = deg2rad(float(write_read('C', sensorArduino)))
+        [xraw, yraw] = latlonToXY(gpsLat, gpsLon, aspect_ratio)
+        xcenter = xraw+(robotWidth/2.0)*cos(robotAngle)
+        ycenter = yraw-(robotWidth/2.0)*sin(robotAngle)
+        measured_state = np.array([[xcenter],[ycenter],[sin(robotAngle)*velocityMagnitude],[cos(robotAngle)*velocityMagnitude]])
+        [xfilter,yfilter] = filteredGPS(measured_state)
+        [latAdjusted, lonAdjusted] = XYtolatlon(xfilter,yfilter,aspect_ratio)
+        gps_lat_old = latAdjusted
+        gps_lon_old = lonAdjusted
+        return latAdjusted, lonAdjusted, xfilter, yfilter, robotAngle, int(sats), time, int(qual)
+    except Exception as e:
+        receiver.send_data_async(remoteTransmitter, str(e))
+
+def filterInit(initial_state, time_step):
+    global gpsFilter
+    global gps_lat_old
+    global gps_lon_old
+    gpsFilter = TwoDKalman(initial_state, time_step, XVariance, YVariance, XVelocityVariance, YVelocityVariance)
+
+def filteredGPS(current_state):
+    [x, y] = gpsFilter.filter(current_state)
+    return x,y
 
 def deg2rad(deg):
     '''
@@ -181,10 +233,16 @@ def calcAngleError(x1, y1, x2, y2, xp, yp, robotAngle, r):
     pt1Dist = ((xp-x1)**2 + (yp-y1)**2)**(1/2)
     pt2Dist = ((xp-x2)**2 + (yp-y2)**2)**(1/2)
     if x2 == x1:
-        Acoef = 1
-        Bcoef = -2*yp
-        Ccoef = x2**2-2*xp*x2+xp**2+yp**2-r**2
-        perpDist = ((x2-xp)**2)**(1/2)
+        if y2 == y1:
+            Acoef = 1
+            Bcoef = -2*yp
+            Ccoef = x2**2-2*xp*x2+xp**2+yp**2-r**2
+            perpDist = pt1Dist+1
+        else:
+            Acoef = 1
+            Bcoef = -2*yp
+            Ccoef = x2**2-2*xp*x2+xp**2+yp**2-r**2
+            perpDist = ((x2-xp)**2)**(1/2)
     else:
         m = (y2-y1)/(x2-x1)
         b = y2-m*x2
@@ -258,21 +316,6 @@ def calcAngleError(x1, y1, x2, y2, xp, yp, robotAngle, r):
         angleError = -1*angleError
     return angleError
 
-
-def movingAverageFilter(error, errorlist, filtersize):
-    i = len(errorlist)
-    if i > filtersize:
-        err = 0
-        j = 1
-        while j < filtersize:
-            err += errorlist[i-j]
-            j += 1
-        err  = (err+error)/(filtersize)
-    else:
-        err = error
-    return err
-
-
 def writeToArduino(x, microcontroller): 
     """
     This function communicates with the latte panda's onboard arduino or USB connected arduino. It takes what is being written and a port name.
@@ -293,7 +336,6 @@ def write_read(x, microcontroller):  # communucation btw the cpu and ard
     This function communicates with the latte panda's onboard arduino or USB connected arduino and receives a return signal. It takes what is being written and a port name.
     """
     try:
-        # arduino = serial.Serial(port = portName, baudrate=9600, timeout=5)
         microcontroller.flushInput()  # flush input buffer, discarding all its contents
         microcontroller.flushOutput()
         microcontroller.write(bytes(x, "utf-8"))
@@ -347,7 +389,6 @@ def manualControl(keystroke):
 
     if keystroke == "" and speedset < 0:
         velocitySignal = 1500
-    # print(angleSignal)
     return str(angleSignal)+","+str(velocitySignal)+","+str(setpoint)
 
 
@@ -370,6 +411,8 @@ def waypointFollwerVariableInits(ki, kp, kd, R):
     global r
     global latPath
     global lonPath
+    global heading
+    heading = []
     latPath = []
     lonPath = []
     r = R
@@ -433,7 +476,7 @@ def logDataUpdate(data, name):
             i += 1
 
 
-def initializeWaypointFollower(name):
+def initializeWaypointFollower(name, receiver, remoteTransmitter):
     """
     This is to set the inital error so the derivative control doesn't do funny things on startup. The function is just one pass through the waypoint follower loop without actually issuing any motor commands.
     """
@@ -444,7 +487,18 @@ def initializeWaypointFollower(name):
     global ywaypoints
     global wpNum
     global oldErr
+    global initial_state
+    global xp 
+    global yp
+    global xWaypoint
+    global yWaypoint
+    global xlastWaypoint
+    global ylastWaypoint
+    global gps_lat_old
+    global gps_lon_old
     waypoints = genfromtxt(name, delimiter=',')
+    receiver.send_data_async(remoteTransmitter, "length of chosen file: " + str(len(waypoints)))
+    print(len(waypoints))
     refLat = deg2rad(waypoints[0,0])
     aspectRatio = cos(refLat)
     xwaypoints = []
@@ -456,22 +510,36 @@ def initializeWaypointFollower(name):
         xwaypoints.append(xpoints)
         ywaypoints.append(ypoints)
         i += 1
-
-    try:
-        [gps_lat,gps_lon] = readGPS()[0:2]
-
-        [xp, yp] = latlonToXY(gps_lat, gps_lon, aspectRatio)
-    except:
-        print("No connection to GPS")
-        pass
+    i = 0
+    failure = True
+    while i < 5 and failure ==True:
+        try:
+            [gps_lat,gps_lon, sats] = readGPS()[0:3]
+            receiver.send_data_async(remoteTransmitter, "try "+str(i)+", lat:"+str(gps_lat)+ ", lon:"+ str(gps_lon))
+            if sats != 0 and round(gps_lon) != 0:
+                [xp, yp] = latlonToXY(gps_lat, gps_lon, aspectRatio)
+                failure = False
+                receiver.send_data_async(remoteTransmitter, "Success")
+                gps_lat_old = gps_lat
+                gps_lon_old = gps_lon
+        except Exception as e:
+            receiver.send_data_async(remoteTransmitter, str(e))
+            print("No connection to GPS")
+            pass
+        i += 1
+    
 # Set first old error equal to the new one to stop weird inital derivative error behavior
     robotAngle = deg2rad(float(write_read('C', sensorArduino)))
+
+    initial_state = np.array([[xp],[yp],[sin(robotAngle)*velocityMagnitude],[cos(robotAngle)*velocityMagnitude]])
+    filterInit(initial_state, 0.512)
+
     [xWaypoint,yWaypoint] = xwaypoints[wpNum],ywaypoints[wpNum]
     if wpNum == 0:
         [xlastWaypoint, ylastWaypoint] = [xWaypoint, yWaypoint]
     else:
         [xlastWaypoint,ylastWaypoint] = xwaypoints[wpNum-1],ywaypoints[wpNum-1]
-    while distanceToWaypoint(xp,yp,xWaypoint,yWaypoint) < r: #distance is in m, maybe use lat/lon to X/Y?
+    while distanceToWaypoint(xp,yp,xWaypoint,yWaypoint) < r:
         wpNum +=1
         if wpNum >= len(waypoints):
             break
@@ -493,6 +561,11 @@ def waypointFollower(ki,kp,kd,lookahead, receiver, remoteTransmitter, filename):
     global ylastWaypoint
     global xWaypoint
     global yWaypoint
+    global initial_state
+    global aspectRatio
+    global xp
+    global yp
+    global heading
     logDataInit("traversedPath.csv")
     logDataInit("errorOutput.csv")
     logDataInit("PIDoutput.csv")
@@ -504,28 +577,32 @@ def waypointFollower(ki,kp,kd,lookahead, receiver, remoteTransmitter, filename):
     trueTime = []
     logTimer = perf_counter()
     waypointFollwerVariableInits(ki,kp,kd,lookahead)
-    initializeWaypointFollower(filename)
+    try:
+        initializeWaypointFollower(filename, receiver, remoteTransmitter)
+    except Exception as e:
+        receiver.send_data_async(remoteTransmitter, str(e))
+        return
+
     while True:
     # Take GPS measurement and compass measurement
-        robotAngle = deg2rad(float(write_read('C', sensorArduino)))
         try:
-            [gps_lat,gps_lon,sats, time] = readGPS()[0:4]
-            if sats != 0:
-                [xraw, yraw] = latlonToXY(gps_lat, gps_lon, aspectRatio)
-                xcenter = xraw+(robotWidth/2)*cos(robotAngle)
-                ycenter = yraw-(robotWidth/2)*sin(robotAngle)
-                [latAdjusted, lonAdjusted] = XYtolatlon(xcenter,ycenter,aspectRatio)
-                latPath.append(latAdjusted)
-                lonPath.append(lonAdjusted)
-                xp = xcenter
-                yp = ycenter
-        except:
-            print("No connection to GPS")
+            [lattitude, longitude, x, y, robotAngle, sats, time, quality] = get_filtered_state(aspectRatio, receiver, remoteTransmitter)
+            if sats != 0:              
+                latPath.append(lattitude[0])
+                lonPath.append(longitude[0])
+                heading.append(robotAngle)
+                xp = x
+                yp = y
+
+        except Exception as e:
+            receiver.send_data_async(remoteTransmitter, "GPS issue")
+            print(e)
             pass
     
     # Read and select waypoint values
     # If robot within threshold distance increment to next waypoint
-        while distanceToWaypoint(xp,yp,xWaypoint,yWaypoint) < r: #distance is in m, maybe use lat/lon to X/Y?
+
+        while distanceToWaypoint(xp,yp,xWaypoint,yWaypoint) < r: 
             wpNum +=1
             if wpNum >= len(waypoints): # Check for more waypoints
                 writeToArduino("S0,1500,0", steeringArduino)
@@ -546,23 +623,27 @@ def waypointFollower(ki,kp,kd,lookahead, receiver, remoteTransmitter, filename):
             break
         except:
             pass
-    # Calculate angle error
-        err = calcAngleError(xlastWaypoint,ylastWaypoint,xWaypoint,yWaypoint,xp,yp,robotAngle,r)
-        infostr = str(distanceToWaypoint(xp,yp,xWaypoint,yWaypoint))+" m,"+str(rad2deg(err))+" degrees"
-        receiver.send_data_async(remoteTransmitter, infostr)
-        errplot.append(err)
-        timeplot.append(perf_counter())
-        if timeplot[-1] - logTimer > logFrequency:
-            pwrplot.append(write_read('P',sensorArduino))
-            trueTime.append(time)
-            logTimer = timeplot[-1]
-    # Run error through PID control for steering
-        output = computePID(-err, Speed)
-        # output = movingAverageFilter(output,outputlist,1)
-        outputlist.append(output)
 
-    # Output to steering motors
-        writeToArduino("S"+str(output)+","+str(Speed)+","+str(0), steeringArduino)
+    # Calculate angle error
+        try:
+            err = calcAngleError(xlastWaypoint,ylastWaypoint,xWaypoint,yWaypoint,xp,yp,robotAngle,r)
+            errplot.append(err)
+            timeplot.append(perf_counter())
+            if timeplot[-1] - logTimer > logFrequency:
+                pwrplot.append(write_read('P',sensorArduino))
+                trueTime.append(time)
+                logTimer = timeplot[-1]
+        # Run error through PID control for steering
+            output = computePID(-err, Speed)
+            outputlist.append(output)
+
+        # Output to steering motors
+            writeToArduino("S"+str(output)+","+str(Speed)+","+str(0), steeringArduino)
+        except Exception as e:
+            receiver.send_data_async(remoteTransmitter, str(e))
+            print(e)
+            pass
+
     #writing data to file
         if len(latPath) > listSize:
             data = []
@@ -608,6 +689,7 @@ def waypointFollower(ki,kp,kd,lookahead, receiver, remoteTransmitter, filename):
             except Exception as e:
                 print(str(e))
                 receiver.send_data_async(remoteTransmitter, str(e))    
+
     # Check for obstacles
 
     # Turn parallel to obstacle
@@ -659,7 +741,4 @@ def waypointFollower(ki,kp,kd,lookahead, receiver, remoteTransmitter, filename):
         print(str(e))
         receiver.send_data_async(remoteTransmitter, str(e))   
 
-    # logPath(latPath,lonPath,"traversedPath.csv")
-    # logPath(timeplot,errplot,"errorOutput.csv")
-    # logPath(timeplot,outputlist,"PIDoutput.csv")
-    # logPath(timeplot, pwrplot, "powerConsumption.csv")
+

@@ -8,8 +8,6 @@ import glob
 from math import cos, sin
 import sys
 from time import perf_counter
-import numpy as np
-# from CustomKalman import TwoDKalman
 #--------------------
 # Pancreas Main Code
 #--------------------
@@ -28,32 +26,16 @@ import numpy as np
     # - CHECK - Read power
     #................
 #--------------------
-
-#--------------------
-# Global Variables
-#--------------------
-powerReadingDelay = 10
+powerReadingDelay = 5
 aspectRatio = 0.0
-average_timestep = 0.5 #seconds UPDATE THIS!
-# XVariance = 5 #noise variance in meters for longitude
-# YVariance = 5 #noise variance in meters for latitude
-# XVelocityVariance = 0.05 #noise varience in measured velocity
-# YVelocityVariance = 0.05 #noise varience in measured velocity
 methods.getSerialPorts()
 receiver = XBeeDevice(methods.radioPort, 9600)
 remoteTransmitter = RemoteXBeeDevice(receiver, XBee64BitAddress.from_hex_string("0013A2004104110E"))
 receiver.open()
 print(str(methods.initArduinos()))
 
-
-#--------------------
-# Main Radio Message Handler
-#--------------------
 if __name__ == "__main__":
     print("Pancreas Online")
-    #--------------------
-    # Read Radio Messages Until Loop Ends
-    #--------------------
     while True:
         message = ""
         try:
@@ -63,9 +45,6 @@ if __name__ == "__main__":
         except:
             # print("no message")
             pass
-    #--------------------
-    # Manual Mode
-    #--------------------
         if message == "manual":
             # print("manual mode activated")
             global pathName
@@ -79,9 +58,6 @@ if __name__ == "__main__":
             dt = []
             logPath = False
             pathName = ""
-            #--------------------
-            # Continue Reading Messages 
-            #--------------------
             while message != '0':
                 try:
                     data = receiver.read_data_from(remoteTransmitter, 0.1)
@@ -90,14 +66,10 @@ if __name__ == "__main__":
 
                 except:
                     message = ""
-            #--------------------
-            # Path and power recording
-            #--------------------
                 if message == "3":
                     # powerName = "powerDefault.csv"
                     CurrentTime = perf_counter()
                     t1 = perf_counter()
-
                     try:
                         print("Getting file name . . .")
                         receiver.flush_queues()
@@ -126,12 +98,8 @@ if __name__ == "__main__":
                     while i < 5 and logPath == False: 
                         try:
                             i += 1
-                            [reflat,reflon,satnum] = methods.readGPS()[0:3]
+                            [reflat,satnum] = methods.readGPS()[0:3:2]
                             aspectRatio = cos(reflat)
-                            [x1,y1] = methods.latlonToXY(reflat,reflon,aspectRatio)
-                            robot_heading = methods.deg2rad(float(methods.write_read('C', methods.sensorArduino)))
-                            initial_state = np.array([[x1],[y1],[sin(robot_heading)*methods.velocityMagnitude],[cos(robot_heading)*methods.velocityMagnitude]])
-                            methods.filterInit(initial_state,average_timestep)
                             receiver.send_data_async(remoteTransmitter, "try "+str(i)+", "+str(reflat))
                             if satnum !=0:
                                logPath = True
@@ -161,15 +129,22 @@ if __name__ == "__main__":
                     # print(str(len(power)) + " vals in list")
                     try:
                         methods.logDataUpdate(power, powerName)
+                        # methods.logDataUpdate(["logging"], powerName)
                         power = []
                     except Exception as e:
                         print(str(e))
                         receiver.send_data_async(remoteTransmitter, str(e))
-            #--------------------
-            # Stop recording and write to file
-            #--------------------
+
                 if message == "4":
+                    # try:
+                        # receiver.flush_queues()
+                        # receiver.send_data_async(remoteTransmitter, "Please supply a file name with a .csv extension within the next 30s")
+                        # receiver.flush_queues()
+                        # data = receiver.read_data_from(remoteTransmitter, 30)
+                        # name = data.data.decode("utf8")
                     logPath = False
+                    # except:
+                    #     name = "defaultName.csv"
                     try:
                         data = []
                         i  = 0
@@ -186,6 +161,7 @@ if __name__ == "__main__":
                         receiver.send_data_async(remoteTransmitter, str(e))
                         
                     try:
+                        power.append("ending file")
                         methods.logDataUpdate(power, powerName)
                         power = []
                     except Exception as e:
@@ -193,18 +169,27 @@ if __name__ == "__main__":
                         receiver.send_data_async(remoteTransmitter, str(e))
 
                 if logPath == True:
+                    # receiver.send_data_async(remoteTransmitter, str(perf_counter() - CurrentTime))
                     if (perf_counter()-CurrentTime) > powerReadingDelay:
                         CurrentTime = perf_counter()
+                        receiver.send_data_async(remoteTransmitter, str("taking power reading"))
                         try:
                             power.append(methods.write_read('P', methods.sensorArduino))
-                        except:
-                            pass
+                            receiver.send_data_async(remoteTransmitter, str(len(power)))
+                        except Exception as e:
+                            receiver.send_data_async(remoteTransmitter, str(e))
+                            receiver.send_data_async(remoteTransmitter, str("power reading failed"))
                     try:
-                        [lattitude, longitude, x, y, angle, sats, time, quality] = methods.get_filtered_state(aspectRatio)
+                        [gps_lat, gps_lon, sats] = methods.readGPS()[0:3]
+                        robotAngle = methods.deg2rad(float(methods.write_read('C', methods.sensorArduino)))
                         if sats != 0:
-                            lat.append(lattitude)
-                            lon.append(longitude)
-                            heading.append(angle)
+                            [xraw, yraw] = methods.latlonToXY(gps_lat, gps_lon, aspectRatio)
+                            xcenter = xraw+(methods.robotWidth/2.0)*cos(robotAngle)
+                            ycenter = yraw-(methods.robotWidth/2.0)*sin(robotAngle)
+                            [latAdjusted, lonAdjusted] = methods.XYtolatlon(xcenter,ycenter,aspectRatio)
+                            lat.append(latAdjusted)
+                            lon.append(lonAdjusted)
+                            heading.append(robotAngle)
                             dt.append(perf_counter() - t1)
                             t1 = perf_counter()
                     except Exception as e:
@@ -213,11 +198,13 @@ if __name__ == "__main__":
                         line_number = exception_traceback.tb_lineno
                         receiver.send_data_async(remoteTransmitter, str(e) +", "+ str(exception_type)+", "+str(filename)+", "+str(line_number))
                         pass
+                # print(methods.manualControl(message))
+                # var = str(methods.write_read('S'+ methods.manualControl(message), methods.steeringArduino))
+                # print(var)
+                # print('S'+ methods.manualControl(message))
                 methods.writeToArduino('S'+methods.manualControl(message), methods.steeringArduino)
                 
-    #--------------------
-    # Setting speed
-    #--------------------
+
         elif message == "set speed":
             try:
                 receiver.send_data_async(remoteTransmitter, 'Input a speed in microseconds from 1500 to 2000. Current speed is ' + str(methods.Speed))
@@ -229,9 +216,7 @@ if __name__ == "__main__":
                 print("Error with speed setting")
                 print(str(e))
                 receiver.send_data_async(remoteTransmitter, str(e))
-    #--------------------
-    # Read GPS
-    #--------------------
+
         elif message == "gps reading":
             try:
                 receiver.send_data_async(remoteTransmitter, str(methods.readGPS()))
@@ -239,33 +224,25 @@ if __name__ == "__main__":
                 print("Failed to send GPS data")
                 print(str(e))
                 receiver.send_data_async(remoteTransmitter, str(e))
-    #--------------------
-    # Read Power
-    #--------------------
+        
         elif message == "power reading":
             try:
                 receiver.send_data_async(remoteTransmitter, methods.write_read('P', methods.sensorArduino))
             except Exception as e:
                 print("Failed to send power data, " + str(e))
                 receiver.send_data_async(remoteTransmitter, str(e))
-    #--------------------
-    # Read Compass
-    #--------------------
+
         elif message == "compass reading":
             try:
                 receiver.send_data_async(remoteTransmitter, methods.write_read('C', methods.sensorArduino))
             except Exception as e:
                 print("Failed to send compass data")
                 receiver.send_data_async(remoteTransmitter, str(e))
-    #--------------------
-    # Test For Connection
-    #--------------------
+
         elif message == "ping":
             receiver.send_data_async(
                 remoteTransmitter, "Robot computer online")
-    #--------------------
-    # Run Autonomously From File
-    #--------------------
+
         elif message == "autonomous":
             filelist = []
             counter = 1

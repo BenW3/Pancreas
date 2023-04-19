@@ -3,7 +3,7 @@
 % f = fopen('data.csv','r');
 % A = textscan(f,'%f');
 % fclose(f);
-data = readmatrix('G:\2023_data\test5.csv');
+data = readmatrix('G:\fieldtestfinal.csv');
 
 Latitude = data(:,1);
 % Latitude = Latitude/1e4

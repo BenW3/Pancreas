@@ -15,8 +15,8 @@ headingx = []
 headingy = []
 # errordata = genfromtxt(r'G:\test2\erroroutput.csv', delimiter=',')
 # PIDdata = genfromtxt(r'G:\test2\PIDoutput.csv', delimiter=',')
-pathdata = genfromtxt(r'G:test5.csv', delimiter=',')
-desiredpathdata = genfromtxt(r'G:filteredtest5.csv', delimiter=',')
+pathdata = genfromtxt(r'G:traversedPath.csv', delimiter=',')
+desiredpathdata = genfromtxt(r'G:campuspath.csv', delimiter=',')
 
 refLat = methods.deg2rad(desiredpathdata[0,0])
 aspectRatio = methods.cos(refLat)

@@ -56,11 +56,47 @@ void StepperMotorClosedLoop::calculateSteps(float desiredPos) {
     } else {
         _stepsToGo = _desiredCount;
     }
+    // if (_stepsToGo < 0) {
+    //   _stepsToGo = _steps-
+    // } else if (_stepsToGo > _steps) {
 
+    // }
 }
 
+// int StepperMotorClosedLoop::calculateStepsReversible(float desiredPos) {
+//     _mux.setPort(_port);
+//     int val = 1;
+//     _desiredCount = (desiredPos * _steps/2)/PI;
+//     _desiredCount = _desiredCount % _steps;
+//     _readRawAngle();
+//     _correctAngle();
+//     _checkQuadrant();
+//     _currentCount = _totalAngle;
+//     if (abs(_currentCount - _desiredCount) > _steps / 2) {
+//         if (_currentCount > _desiredCount) {
+//             _stepsToGo = _steps + _desiredCount;
+//         } else {
+//             _stepsToGo = _desiredCount - _steps;
+//         }
+//     } else {
+//         _stepsToGo = _desiredCount;
+//     }
+//     if (abs(_currentCount - _stepsToGo) > (_steps/4)) {
+//         _stepsToGo = (_stepsToGo + _steps/2) % _steps;
+//         val = -1;
+//     } else {
+//         val =  1;
+//     }
+//     if (abs(_currentCount - _stepsToGo) > _steps / 2) {
+//         if (_currentCount > _stepsToGo) {
+//             _stepsToGo = _steps + _stepsToGo;
+//         } else {
+//             _stepsToGo = _stepsToGo - _steps;
+//         }
+//     }
 
-
+//     return val;
+// }
 
 int StepperMotorClosedLoop::calculateStepsReversible(float desiredPos) {
     _mux.setPort(_port);
@@ -123,8 +159,17 @@ void StepperMotorClosedLoop::calibrateZero() {
 }
 
 void StepperMotorClosedLoop::_correctAngle() {
-  _correctedAngle = _degAngle; 
-
+  //recalculate angle
+  _correctedAngle = _degAngle; // - _startAngle; //this tares the position
+  // _correctedAngle = _correctedAngle % _steps;
+//   if(correctedAngle < 0){ //if the calculated angle is negative, we need to "normalize" it
+//   _correctedAngle = _correctedAngle + _steps; //correction for negative numbers (i.e. -15 becomes +345)
+//   }
+//   else {
+//     //do nothing
+//   }
+  //Serial.print("Corrected angle: ");
+  //Serial.println(correctedAngle, 2); //print the corrected/tared angle  
 }
 
 void StepperMotorClosedLoop::_checkQuadrant() {
@@ -177,8 +222,14 @@ void StepperMotorClosedLoop::_checkQuadrant() {
     _previousquadrantNumber = _quadrantNumber;  //update to the current quadrant
   
   }  
+  //Serial.print("Turns: ");
+  //Serial.println(numberofTurns,0); //number of turns in absolute terms (can be negative which indicates CCW turns)  
 
+  //after we have the corrected angle and the turns, we can calculate the total absolute position
   _totalAngle = (_numberofTurns*_stepsNoGearbox + _correctedAngle); //number of turns (+/-) plus the actual angle within the 0-360 range
+  //  _totalAngle = (_numberofTurns*_stepsNoGearbox + _degAngle)%_steps;
+  //Serial.print("Total angle: ");
+  //Serial.println(totalAngle, 2); //absolute position of the motor expressed in degree angles, 2 digits  
 }
 
 void StepperMotorClosedLoop::_checkMagnetPresence() {

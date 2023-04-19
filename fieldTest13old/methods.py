@@ -9,8 +9,7 @@ from time import perf_counter
 from numpy import genfromtxt, sign, sort
 import csv
 import serial.tools.list_ports
-from CustomKalman import TwoDKalman
-import numpy as np
+
 # steeringArduino = serial.Serial(port = 'COM13', baudrate=9600, timeout=5)
 logFrequency = 10 # How frequent should data be logged? s, min?
 listSize = 100 #How large list is before logging
@@ -22,11 +21,6 @@ mode = 1  # Steering mode
 setpoint = 0  # for synchronous steering
 Speed = 1600
 speedset = -1
-XVariance = 5 #noise variance in meters for longitude
-YVariance = 5 #noise variance in meters for latitude
-XVelocityVariance = 0.05 #noise varience in measured velocity
-YVelocityVariance = 0.05 #noise varience in measured velocity
-velocityMagnitude = 0.3 #m/s guess
 
 
 def getSerialPorts():
@@ -107,45 +101,8 @@ def readGPS():
         return gpsLat, gpsLon, int(sats), time, int(qual)
     except Exception as e:
         return e
+    
 
-def get_filtered_state(aspect_ratio):
-    """
-    This function reads the GPS Serial port and translates NMEA to usable values. It returns lattitutde and longitude, cartesian coordinates, heading, satellites connected, time, and gps quality.
-    """
-    try:
-        data = ""
-        gps = serial.Serial(port = gpsPort, baudrate=115200, timeout=5)
-        gps.flushInput()  # flush input buffer, discarding all its contents
-        gps.flushOutput()
-        sleep(.05)
-        data = gps.readline()
-        sleep(.05)
-        gps.close()
-        data = data.decode("utf-8")
-        dataParse = pynmea2.parse(data)
-        gpsLat = dataParse.latitude
-        gpsLon = dataParse.longitude
-        sats = dataParse.num_sats
-        time = dataParse.timestamp
-        qual = dataParse.gps_qual
-        robotAngle = deg2rad(float(write_read('C', sensorArduino)))
-        [xraw, yraw] = latlonToXY(gpsLat, gpsLon, aspect_ratio)
-        xcenter = xraw+(robotWidth/2.0)*cos(robotAngle)
-        ycenter = yraw-(robotWidth/2.0)*sin(robotAngle)
-        measured_state = np.array([[xcenter],[ycenter],[sin(robotAngle)*velocityMagnitude],[cos(robotAngle)*velocityMagnitude]])
-        [xfilter,yfilter] = filteredGPS(measured_state)
-        [latAdjusted, lonAdjusted] = XYtolatlon(xfilter,yfilter,aspectRatio)
-        return latAdjusted, lonAdjusted, xfilter, yfilter, robotAngle, int(sats), time, int(qual)
-    except Exception as e:
-        return e
-
-def filterInit(initial_state, time_step):
-    global gpsFilter
-    gpsFilter = TwoDKalman(initial_state, time_step, XVariance, YVariance, XVelocityVariance, YVelocityVariance)
-
-def filteredGPS(current_state):
-    [x, y] = gpsFilter.filter(current_state)
-    return x,y
 
 def deg2rad(deg):
     '''
@@ -302,18 +259,18 @@ def calcAngleError(x1, y1, x2, y2, xp, yp, robotAngle, r):
     return angleError
 
 
-# def movingAverageFilter(error, errorlist, filtersize):
-#     i = len(errorlist)
-#     if i > filtersize:
-#         err = 0
-#         j = 1
-#         while j < filtersize:
-#             err += errorlist[i-j]
-#             j += 1
-#         err  = (err+error)/(filtersize)
-#     else:
-#         err = error
-#     return err
+def movingAverageFilter(error, errorlist, filtersize):
+    i = len(errorlist)
+    if i > filtersize:
+        err = 0
+        j = 1
+        while j < filtersize:
+            err += errorlist[i-j]
+            j += 1
+        err  = (err+error)/(filtersize)
+    else:
+        err = error
+    return err
 
 
 def writeToArduino(x, microcontroller): 
@@ -601,6 +558,7 @@ def waypointFollower(ki,kp,kd,lookahead, receiver, remoteTransmitter, filename):
             logTimer = timeplot[-1]
     # Run error through PID control for steering
         output = computePID(-err, Speed)
+        # output = movingAverageFilter(output,outputlist,1)
         outputlist.append(output)
 
     # Output to steering motors
